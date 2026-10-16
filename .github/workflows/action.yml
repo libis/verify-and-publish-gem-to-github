@@ -1,0 +1,54 @@
+name: Verify and publish Ruby gem to GitHub Packages
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+      owner:
+        required: false
+
+jobs:
+
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: Verify Gem Version Matches Git Tag
+        run: |
+          
+          # Remove leading 'v' from version if any
+          GIT_TAG="${{ github.ref_name }}"
+          CLEANED_TAG=$(echo "$GIT_TAG" | sed 's/^v//')
+          echo "Git Tag: $GIT_TAG (Parsed version: $CLEANED_TAG)"
+
+          # Extract the actual version from the Ruby project
+          GEM_VERSION=$(ruby -e "spec = Gem::Specification.load(Dir.glob('*.gemspec').first); puts spec.version")
+          echo "Gem Version: $GEM_VERSION"
+
+          # Compare the two versions
+          if [ "$CLEANED_TAG" != "$GEM_VERSION" ]; then
+            echo "ERROR: Version mismatch! Git tag is $GIT_TAG, but Gem version is $GEM_VERSION."
+            exit 1
+          else
+            echo "SUCCESS: Git tag matches Gem version ($GEM_VERSION)."
+          fi
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build and publish to GitHub Package
+        uses: actionshub/publish-gem-to-github@main
+        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          owner: ${{ secrets.OWNER }}
+          token: ${{ secrets.token }}
+          owner: ${{ secrets.owner }}
