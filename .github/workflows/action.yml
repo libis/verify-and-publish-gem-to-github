@@ -48,7 +48,5 @@ jobs:
       - name: Build and publish to GitHub Package
         uses: actionshub/publish-gem-to-github@main
         with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          owner: ${{ secrets.OWNER }}
           token: ${{ secrets.token }}
           owner: ${{ secrets.owner }}
